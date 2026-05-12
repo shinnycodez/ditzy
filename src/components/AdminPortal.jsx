@@ -17,6 +17,7 @@ function AdminPortal() {
   const [salesByMonth, setSalesByMonth] = useState([]);
   const [productSales, setProductSales] = useState([]);
   const [totalSales, setTotalSales] = useState({ day: 0, month: 0, year: 0 });
+  const [searchTerm, setSearchTerm] = useState('');
 
 const [formData, setFormData] = useState({
   title: "",
@@ -64,6 +65,34 @@ const [formData, setFormData] = useState({
   const [expandedContacts, setExpandedContacts] = useState({}); // New state for expanded contacts
   const [viewingImage, setViewingImage] = useState(null); // State for image viewer
 
+  const filteredProducts = products.filter(product => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search in title
+    if (product.title?.toLowerCase().includes(searchLower)) return true;
+    
+    // Search in category
+    if (product.category?.toLowerCase().includes(searchLower)) return true;
+    
+    // Search in variations/colors
+    if (product.variations?.some(variation => 
+      variation.toLowerCase().includes(searchLower)
+    )) return true;
+    
+    // Search in sizes
+    if (product.sizes?.some(size => 
+      size.toLowerCase().includes(searchLower)
+    )) return true;
+    
+    // Search in stock keys
+    if (product.stock && Object.keys(product.stock).some(key => 
+      key.toLowerCase().includes(searchLower)
+    )) return true;
+    
+    return false;
+  });
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
       setProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
@@ -532,6 +561,7 @@ const OrderDetails = ({ order }) => (
         <p>{order.shippingAddress?.city}, {order.shippingAddress?.region}</p>
         <p>{order.shippingAddress?.country}, {order.shippingAddress?.postalCode}</p>
         <p>Phone: {order.shippingAddress?.phone}</p>
+       <p>Instagram: {order.shippingAddress?.customerInstagram}</p>
       </div>
     </div>
 
@@ -1000,87 +1030,132 @@ const OrderDetails = ({ order }) => (
           )}
         </div>
 
-        {/* Product Inventory Section */}
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-          <button
-            onClick={() => setShowInventory(!showInventory)}
-            className="w-full bg-black text-white px-4 py-3 text-left rounded-md hover:bg-gray-800 transition-colors duration-200 flex items-center justify-between text-base sm:text-lg font-medium"
+ {/* Product Inventory Section */}
+<div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+  <button
+    onClick={() => setShowInventory(!showInventory)}
+    className="w-full bg-black text-white px-4 py-3 text-left rounded-md hover:bg-gray-800 transition-colors duration-200 flex items-center justify-between text-base sm:text-lg font-medium"
+  >
+    <span>{showInventory ? "➖ Hide Inventory" : "📦 View Product Inventory"}</span>
+    <svg className={`w-5 h-5 transition-transform duration-200 ${showInventory ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+  </button>
+
+  {showInventory && (
+    <div className="mt-4">
+      {/* Search Bar */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="🔍 Search products by title, category, color, size..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm sm:text-base"
+          />
+          <svg 
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
           >
-            <span>{showInventory ? "➖ Hide Inventory" : "📦 View Product Inventory"}</span>
-            <svg className={`w-5 h-5 transition-transform duration-200 ${showInventory ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-
-          {showInventory && (
-            <div className="mt-4 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-inner grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {products.length === 0 ? (
-                <p className="col-span-full text-center text-gray-500 text-sm sm:text-base py-4">No products found. Add a product to get started!</p>
-              ) : (
-                products.map((product) => {
-                  // Check if product has any active discount
-                  const activeDiscount = discounts.find(discount => 
-                    discount.productIds.includes(product.id) && isDiscountActive(discount)
-                  );
-                  const discountedPrice = activeDiscount 
-                    ? Math.round(product.price * (1 - activeDiscount.discountPercentage / 100))
-                    : null;
-
-                  return (
-                    <div key={product.id} className={`flex flex-col sm:flex-row gap-4 border border-gray-200 p-4 rounded-md shadow-sm ${product.available === false ? 'bg-gray-100 opacity-80' : 'bg-white'} ${activeDiscount ? 'ring-2 ring-green-300' : ''}`}>
-                      <div className="relative">
-                        <img src={product.coverImage} className="w-24 h-24 object-contain rounded-md flex-shrink-0 mx-auto sm:mx-0" alt={product.title} />
-                        {activeDiscount && (
-                          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                            -{activeDiscount.discountPercentage}%
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <h3 className="font-semibold text-base sm:text-lg text-gray-900 mb-1">{product.title}</h3>
-                        <div className="text-sm text-gray-700">
-                          {activeDiscount ? (
-                            <div>
-                              <span className="line-through text-red-500">PKR {product.price?.toLocaleString()}</span>
-                              <span className="ml-2 font-bold text-green-600">PKR {discountedPrice?.toLocaleString()}</span>
-                              <p className="text-xs text-green-600 font-medium">{activeDiscount.description || 'On Sale'}</p>
-                            </div>
-                          ) : (
-                            <p>Price: PKR {product.price?.toLocaleString()}</p>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700">Category: {product.category}</p>
-                        <p className="text-sm text-gray-700">Top Product: {product.isTopProduct ? "Yes" : "No"}</p>
-                        {product.variations && product.variations.length > 0 && (
-                          <p className="text-sm text-gray-700">Colors: {product.variations.join(', ')}</p>
-                        )}
-                        {product.sizes && product.sizes.length > 0 && (
-                          <p className="text-sm text-gray-700">Sizes: {product.sizes.join(', ')}</p>
-                        )}
-                        <p className="text-sm mt-1">Status: <span className={`font-medium ${product.available === false ? 'text-red-600' : 'text-green-600'}`}>
-                          {product.available === false ? 'Out of Stock' : 'Available'}
-                        </span></p>
-                        {/* In the product display section */}
-<p className="text-sm text-gray-700">
-  Stock: {(() => {
-    if (Object.keys(product.stock || {}).length > 0) {
-      return Object.entries(product.stock || {}).map(([key, value]) => 
-        `${key}: ${value}`
-      ).join(', ');
-    }
-    return product.defaultStock || 0;
-  })()}
-</p>
-                        <div className="mt-3 flex justify-center sm:justify-start gap-2">
-                          <button onClick={() => handleEdit(product)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 text-xs sm:text-sm rounded-md transition-colors duration-200">Edit</button>
-                          <button onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs sm:text-sm rounded-md transition-colors duration-200">Delete</button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
           )}
         </div>
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-xs text-gray-500">
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 sm:p-6 rounded-lg shadow-inner grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {filteredProducts.length === 0 ? (
+          <p className="col-span-full text-center text-gray-500 text-sm sm:text-base py-4">
+            {searchTerm ? `No products found matching "${searchTerm}"` : 'No products found. Add a product to get started!'}
+          </p>
+        ) : (
+          filteredProducts.map((product) => {
+            // Check if product has any active discount
+            const activeDiscount = discounts.find(discount => 
+              discount.productIds.includes(product.id) && isDiscountActive(discount)
+            );
+            const discountedPrice = activeDiscount 
+              ? Math.round(product.price * (1 - activeDiscount.discountPercentage / 100))
+              : null;
+
+            return (
+              <div key={product.id} className={`flex flex-col sm:flex-row gap-4 border border-gray-200 p-4 rounded-md shadow-sm ${product.available === false ? 'bg-gray-100 opacity-80' : 'bg-white'} ${activeDiscount ? 'ring-2 ring-green-300' : ''}`}>
+                <div className="relative">
+                  <img src={product.coverImage} className="w-24 h-24 object-contain rounded-md flex-shrink-0 mx-auto sm:mx-0" alt={product.title} />
+                  {activeDiscount && (
+                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      -{activeDiscount.discountPercentage}%
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="font-semibold text-base sm:text-lg text-gray-900 mb-1">{product.title}</h3>
+                  <div className="text-sm text-gray-700">
+                    {activeDiscount ? (
+                      <div>
+                        <span className="line-through text-red-500">PKR {product.price?.toLocaleString()}</span>
+                        <span className="ml-2 font-bold text-green-600">PKR {discountedPrice?.toLocaleString()}</span>
+                        <p className="text-xs text-green-600 font-medium">{activeDiscount.description || 'On Sale'}</p>
+                      </div>
+                    ) : (
+                      <p>Price: PKR {product.price?.toLocaleString()}</p>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700">Category: {product.category}</p>
+                  <p className="text-sm text-gray-700">Top Product: {product.isTopProduct ? "Yes" : "No"}</p>
+                  {product.variations && product.variations.length > 0 && (
+                    <p className="text-sm text-gray-700">Colors: {product.variations.join(', ')}</p>
+                  )}
+                  {product.sizes && product.sizes.length > 0 && (
+                    <p className="text-sm text-gray-700">Sizes: {product.sizes.join(', ')}</p>
+                  )}
+                  <p className="text-sm mt-1">Status: <span className={`font-medium ${product.available === false ? 'text-red-600' : 'text-green-600'}`}>
+                    {product.available === false ? 'Out of Stock' : 'Available'}
+                  </span></p>
+                  <p className="text-sm text-gray-700">
+                    Stock: {(() => {
+                      if (Object.keys(product.stock || {}).length > 0) {
+                        return Object.entries(product.stock || {}).map(([key, value]) => 
+                          `${key}: ${value}`
+                        ).join(', ');
+                      }
+                      return product.defaultStock || 0;
+                    })()}
+                  </p>
+                  <div className="mt-3 flex justify-center sm:justify-start gap-2">
+                    <button onClick={() => handleEdit(product)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 text-xs sm:text-sm rounded-md transition-colors duration-200">Edit</button>
+                    <button onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs sm:text-sm rounded-md transition-colors duration-200">Delete</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  )}
+</div>
 
         {/* Orders Section */}
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">

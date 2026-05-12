@@ -22,6 +22,7 @@ const CheckoutPage = () => {
     email: '',
     fullName: '',
     phone: '',
+   instagram: '',
     address: '',
     city: '',
     postalCode: '',
@@ -78,6 +79,15 @@ const CheckoutPage = () => {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = form.city.trim().toLowerCase() === 'karachi' ? 250 : 350;
   const total = subtotal + shippingCost;
+
+  // Split payment for JazzCash/EasyPaisa
+  const getSplitAmounts = () => {
+    if (form.paymentMethod !== 'JazzCash/EasyPaisa') return { advance: 0, doorstep: 0 };
+    const advance = Math.max(0, total - 500);
+    const doorstep = total - advance; // will be min(500, total)
+    return { advance, doorstep };
+  };
+  const { advance: advanceAmount, doorstep: doorstepAmount } = getSplitAmounts();
 
   // Check if order meets minimum value requirement
   const isMinimumOrderMet = subtotal >= MINIMUM_ORDER_VALUE;
@@ -174,6 +184,7 @@ const CheckoutPage = () => {
     // Clear the Base64 string if payment method changes from JazzCash/EasyPaisa
     if (name === 'paymentMethod' && value !== 'JazzCash/EasyPaisa') {
       setBankTransferProofBase64(null);
+      setErrors(prev => ({ ...prev, bankTransferProof: '' }));
     }
   };
 
@@ -222,9 +233,9 @@ const CheckoutPage = () => {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Only require bank transfer proof for JazzCash/EasyPaisa
-    if (form.paymentMethod === 'JazzCash/EasyPaisa' && !bankTransferProofBase64) {
-      newErrors.bankTransferProof = 'Please upload a screenshot of your JazzCash transfer or bank transfer receipt.';
+    // Only require bank transfer proof for JazzCash/EasyPaisa (if advance amount > 0)
+    if (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64) {
+      newErrors.bankTransferProof = `Please upload a screenshot of your advance payment of PKR ${advanceAmount.toLocaleString()}.`;
     }
 
     // Check minimum order value
@@ -300,6 +311,7 @@ const CheckoutPage = () => {
         phone: form.phone,
         address: form.address,
         city: form.city,
+        customerInstagram: form.instagram || null,
         postalCode: form.postalCode,
         region: form.region,
         country: form.country,
@@ -313,6 +325,9 @@ const CheckoutPage = () => {
       status: 'processing',
       // Track that stock was already reduced at order placement
       stockReducedAtOrderPlacement: true,
+      // Store split payment details for JazzCash/EasyPaisa
+      advanceAmount: form.paymentMethod === 'JazzCash/EasyPaisa' ? advanceAmount : null,
+      doorstepAmount: form.paymentMethod === 'JazzCash/EasyPaisa' ? doorstepAmount : null,
       bankTransferProofBase64: form.paymentMethod === 'JazzCash/EasyPaisa' ? bankTransferProofBase64 : null,
     };
 
@@ -459,6 +474,24 @@ const CheckoutPage = () => {
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
+              <div className="mb-6">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Instagram Username <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+  </label>
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+      @
+    </span>
+    <input
+      name="instagram"
+      type="text"
+      value={form.instagram}
+      onChange={handleChange}
+      placeholder="yourusername"
+      className="w-full px-4 py-2 pl-8 border border-gray-300 rounded-md focus:ring-black focus:border-black"
+    />
+  </div>
+</div>
 
               <h2 className="text-lg sm:text-xl font-semibold mb-6 pb-2 border-b">Shipping Address</h2>
 
@@ -598,27 +631,32 @@ const CheckoutPage = () => {
                   />
                   <div className="ml-3">
                     <span className="font-medium text-gray-900">JazzCash/EasyPaisa</span>
-                    <p className="text-sm text-gray-500">Pay online via mobile wallet</p>
+                    <p className="text-sm text-gray-500">Split payment: advance online + cash on doorstep</p>
                   </div>
                 </label>
               </div>
 
               {form.paymentMethod === 'JazzCash/EasyPaisa' && (
                 <div className="mt-6 p-4 border border-blue-300 bg-blue-50 rounded-md">
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">JazzCash/EasyPaisa Details</h3>
-                  <p className="text-gray-700 text-sm sm:text-base mb-4">
-                    Please transfer the total amount of PKR {total.toLocaleString()} to our account:
+                  <h3 className="text-base sm:text-lg font-semibold mb-3">Split Payment – JazzCash/EasyPaisa</h3>
+                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                    <strong>Advance payment:</strong> PKR {advanceAmount.toLocaleString()} (total - 500)<br />
+                    <strong>Remaining (pay on doorstep):</strong> PKR {doorstepAmount.toLocaleString()}
+                  </p>
+                  <p className="text-gray-700 mb-2 text-sm sm:text-base">
+                    Please transfer the advance amount of <strong>PKR {advanceAmount.toLocaleString()}</strong> to:
                   </p>
                   <ul className="list-disc list-inside text-gray-800 text-sm sm:text-base mb-4">
-                     <li><strong>Account Name:</strong> Muzaffar uddin Ahmed </li>
-                    <li><strong> Number:</strong> 0333 0258436</li>
+                    <li><strong>Account Name:</strong> Muzaffar uddin Ahmed</li>
+                    <li><strong>JazzCash/EasyPaisa Number:</strong> 0333 0258436</li>
                   </ul>
-                  <p className="text-gray-700 text-sm sm:text-base mb-4">
-                    After making the transfer, please upload a screenshot of the transaction or bank transfer receipt as proof of payment.
+                  <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                    After completing the advance transfer, upload a screenshot / receipt as proof. 
+                    The remaining PKR {doorstepAmount.toLocaleString()} will be collected in cash when your order is delivered.
                   </p>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload Transfer Screenshot/Receipt*
+                      Upload Advance Payment Proof*
                     </label>
                     <input
                       type="file"
@@ -628,7 +666,7 @@ const CheckoutPage = () => {
                     />
                     {errors.bankTransferProof && <p className="mt-1 text-sm text-red-600">{errors.bankTransferProof}</p>}
                     {bankTransferProofBase64 && (
-                      <p className="mt-2 text-sm text-gray-600">Image selected and converted.</p>
+                      <p className="mt-2 text-sm text-green-600">✓ Proof uploaded.</p>
                     )}
                     {convertingImage && (
                       <p className="mt-2 text-sm text-gray-600 flex items-center">
@@ -754,6 +792,15 @@ const CheckoutPage = () => {
                 <span className="font-bold text-base sm:text-lg">PKR {total.toLocaleString()}</span>
               </div>
 
+              {/* Split payment breakdown in order summary */}
+              {form.paymentMethod === 'JazzCash/EasyPaisa' && (
+                <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-700">
+                  <p><strong>Split payment breakdown:</strong></p>
+                  <p>🔹 Advance via JazzCash/EasyPaisa: <strong>PKR {advanceAmount.toLocaleString()}</strong></p>
+                  <p>🔹 Cash on doorstep: <strong>PKR {doorstepAmount.toLocaleString()}</strong></p>
+                </div>
+              )}
+
               {/* Display minimum order error if applicable */}
               {errors.minimumOrder && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -763,9 +810,9 @@ const CheckoutPage = () => {
 
               <button
                 onClick={placeOrder}
-                disabled={loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet}
+                disabled={loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet || (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64)}
                 className={`mt-6 w-full py-3 px-4 rounded-md font-medium text-base ${
-                  loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet
+                  loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet || (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64)
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-black text-white hover:bg-gray-800'
                 } transition`}
@@ -782,6 +829,8 @@ const CheckoutPage = () => {
                   'Your Cart is Empty'
                 ) : !isMinimumOrderMet ? (
                   `Add PKR ${remainingAmount.toLocaleString()} More`
+                ) : (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64) ? (
+                  'Upload advance payment proof'
                 ) : (
                   'Place Order'
                 )}
