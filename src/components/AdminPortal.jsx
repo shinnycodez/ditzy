@@ -674,18 +674,24 @@ const OrderDetails = ({ order }) => (
                     {formData.variations.map((v, i) => (
                       <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                         {v}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              variations: prev.variations.filter((_, index) => index !== i),
-                            }))
-                          }
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          &times;
-                        </button>
+<button
+  type="button"
+  onClick={() => {
+    const variationToRemove = formData.variations[i];
+    const updatedVariations = formData.variations.filter((_, index) => index !== i);
+    const updatedStock = { ...formData.stock };
+    delete updatedStock[variationToRemove];
+    
+    setFormData((prev) => ({
+      ...prev,
+      variations: updatedVariations,
+      stock: updatedStock,
+    }));
+  }}
+  className="text-red-500 hover:text-red-700"
+>
+  &times;
+</button>
                       </span>
                     ))}
                   </div>
@@ -793,18 +799,24 @@ const OrderDetails = ({ order }) => (
                     {formData.sizes.map((size, i) => (
                       <span key={i} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                         {size}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              sizes: prev.sizes.filter((_, index) => index !== i),
-                            }))
-                          }
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          &times;
-                        </button>
+<button
+  type="button"
+  onClick={() => {
+    const sizeToRemove = formData.sizes[i];
+    const updatedSizes = formData.sizes.filter((_, index) => index !== i);
+    const updatedStock = { ...formData.stock };
+    delete updatedStock[sizeToRemove];
+    
+    setFormData((prev) => ({
+      ...prev,
+      sizes: updatedSizes,
+      stock: updatedStock,
+    }));
+  }}
+  className="text-red-500 hover:text-red-700"
+>
+  &times;
+</button>
                       </span>
                     ))}
                   </div>
