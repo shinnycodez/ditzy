@@ -1,69 +1,59 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import SidebarFilters from './SidebarFilters';
 import ProductGrid from './ProductGrid';
-import Newsletter from './Newsletter';
-import Footer from './Footer';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AiOutlineClose, AiOutlineSearch } from 'react-icons/ai';
 
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 function Products() {
+  const queryParams = useQuery();
+  const categoryFromURL = queryParams.get('category');
+  
   const [filters, setFilters] = useState({});
   const [allProducts, setAllProducts] = useState([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch products based on category
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsByCategory = async () => {
+      setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, 'products'));
+        let productsQuery;
+        
+        if (categoryFromURL && categoryFromURL !== 'All') {
+          productsQuery = query(
+            collection(db, 'products'),
+            where('category', '==', categoryFromURL)
+          );
+        } else {
+          productsQuery = collection(db, 'products');
+        }
+        
+        const querySnapshot = await getDocs(productsQuery);
         const productList = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
         setAllProducts(productList);
-        setFilteredProducts(productList);
       } catch (error) {
         console.error('Error fetching products:', error);
+        setAllProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchProducts();
-  }, []);
-
-  // Apply search filter whenever searchQuery or allProducts changes
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(allProducts);
-    } else {
-      const query = searchQuery.toLowerCase().trim();
-      const filtered = allProducts.filter(product => {
-        // Search by title
-        if (product.title?.toLowerCase().includes(query)) return true;
-        
-        // Search by description
-        if (product.description?.toLowerCase().includes(query)) return true;
-        
-        // Search by category
-        if (product.category?.toLowerCase().includes(query)) return true;
-        
-        // Search by variations (colors)
-        if (product.variations?.some(variation => 
-          variation.toLowerCase().includes(query)
-        )) return true;
-        
-        // Search by sizes
-        if (product.sizes?.some(size => 
-          size.toLowerCase().includes(query)
-        )) return true;
-        
-        return false;
-      });
-      setFilteredProducts(filtered);
-    }
-  }, [searchQuery, allProducts]);
+    fetchProductsByCategory();
+  }, [categoryFromURL]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -88,6 +78,18 @@ function Products() {
           </div>
 
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+            {/* Category Header */}
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">
+                {categoryFromURL ? `${categoryFromURL}` : 'All Products'}
+              </h1>
+              {!loading && allProducts.length > 0 && (
+                <p className="text-gray-600 mt-1">
+                  {allProducts.length} {allProducts.length === 1 ? 'product' : 'products'} found
+                </p>
+              )}
+            </div>
+
             {/* Mobile Categories Header with Filters Button */}
             <div className="flex items-center justify-between md:hidden mb-4">
               <h2 className="text-lg font-semibold">Products</h2>
@@ -109,7 +111,7 @@ function Products() {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearch}
-                  placeholder="Search products by name, category, color, size, or description..."
+                  placeholder="Search products by name, description, color, size..."
                   className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-base bg-white"
                 />
                 {searchQuery && (
@@ -121,13 +123,6 @@ function Products() {
                   </button>
                 )}
               </div>
-              
-              {/* Search Results Info */}
-              {searchQuery && (
-                <div className="mt-2 text-sm text-gray-600">
-                  Found {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'} for "{searchQuery}"
-                </div>
-              )}
             </div>
 
             {/* Mobile Fullscreen Filter Overlay */}
@@ -146,24 +141,18 @@ function Products() {
               </div>
             )}
 
-       
-<ProductGrid products={filteredProducts} filters={filters} searchQuery={searchQuery} />
-            {/* No results message */}
-            {filteredProducts.length === 0 && !searchQuery && (
-              <div className="text-center py-12">
-                <p className="text-gray-600">No products available.</p>
-              </div>
-            )}
+            {/* Product Grid - passes only the props that ProductGrid accepts */}
+            <ProductGrid 
+              products={allProducts}
+              filters={filters}
+              searchQuery={searchQuery}
+              loading={loading}
+            />
             
-            {filteredProducts.length === 0 && searchQuery && (
+            {/* No results message */}
+            {!loading && allProducts.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-600 mb-2">No products found matching "{searchQuery}".</p>
-                <button
-                  onClick={clearSearch}
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Clear search
-                </button>
+                <p className="text-gray-600">No products available in {categoryFromURL || 'this category'}.</p>
               </div>
             )}
           </div>

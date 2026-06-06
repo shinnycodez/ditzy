@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-function ProductGrid({ filters = {}, searchQuery = '' }) {
+function ProductGrid({ products = [], filters = {}, searchQuery = '', loading = false }) {
   const queryParams = useQuery();
   const categoryFromURL = queryParams.get('category');
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const {
     category = [],
@@ -21,24 +17,7 @@ function ProductGrid({ filters = {}, searchQuery = '' }) {
     priceRange = [0, Infinity],
   } = filters;
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'products'));
-        const items = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setProducts(items);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-      }
-      setLoading(false);
-    };
-
-    fetchProducts();
-  }, []);
-
+  // Filter products based on filters and URL params
   const filteredProducts = products.filter((product) => {
     // Category filter (from URL or sidebar)
     const matchesCategory = categoryFromURL
@@ -82,7 +61,7 @@ function ProductGrid({ filters = {}, searchQuery = '' }) {
     const matchesPrice =
       product.price >= priceRange[0] && product.price <= priceRange[1];
 
-    // Search filter - enhanced to search more fields
+    // Search filter
     const matchesSearch = searchQuery
       ? product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -114,7 +93,11 @@ function ProductGrid({ filters = {}, searchQuery = '' }) {
   }
 
   if (loading) {
-    return <p className="text-center p-8">Loading products...</p>;
+    return (
+      <div className="text-center p-8">
+        <p className="text-[#757575] text-lg font-medium">Loading products...</p>
+      </div>
+    );
   }
 
   return (
