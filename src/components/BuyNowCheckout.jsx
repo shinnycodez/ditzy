@@ -117,69 +117,82 @@ const BuyNowCheckout = () => {
   };
 
   // Stock validation and reduction (unchanged)
-  const validateAndReduceStock = async (items) => {
-    const stockErrors = [];
-    const stockUpdates = [];
+ const validateAndReduceStock = async (items) => {
+  const stockErrors = [];
+  const stockUpdates = [];
 
-    for (const item of items) {
-      const productRef = doc(db, "products", item.productId || item.id.replace('temp_', ''));
-      const productDoc = await getDoc(productRef);
-      
-      if (!productDoc.exists()) {
-        stockErrors.push(`${item.title}: Product not found`);
-        continue;
-      }
+  for (const item of items) {
+    const productRef = doc(db, "products", item.productId || item.id.replace('temp_', ''));
+    const productDoc = await getDoc(productRef);
+    
+    if (!productDoc.exists()) {
+      stockErrors.push(`${item.title}: Product not found`);
+      continue;
+    }
 
-      const product = productDoc.data();
-      const quantity = item.quantity || 1;
-      let currentStock = null;
-      let stockKey = null;
+    const productData = productDoc.data();
+    const quantity = item.quantity || 1;
+    let currentStock = null;
+    let stockField = null; // 'variation', 'size', or 'default'
+    let stockKey = null;   // the actual key inside the stock map
 
-      if (item.variation && product.stock && product.stock[item.variation] !== undefined) {
-        currentStock = product.stock[item.variation];
-        stockKey = `stock.${item.variation}`;
-      } 
-      else if (item.size && product.stock && product.stock[item.size] !== undefined) {
-        currentStock = product.stock[item.size];
-        stockKey = `stock.${item.size}`;
-      }
-      else {
-        currentStock = product.defaultStock || 0;
-        stockKey = 'defaultStock';
-      }
+    if (item.variation && productData.stock && productData.stock[item.variation] !== undefined) {
+      currentStock = productData.stock[item.variation];
+      stockField = 'variation';
+      stockKey = item.variation;
+    } else if (item.size && productData.stock && productData.stock[item.size] !== undefined) {
+      currentStock = productData.stock[item.size];
+      stockField = 'size';
+      stockKey = item.size;
+    } else {
+      currentStock = productData.defaultStock || 0;
+      stockField = 'default';
+    }
 
-      if (currentStock < quantity) {
-        stockErrors.push(
-          `${item.title}${item.variation ? ` (${item.variation})` : ''}${item.size ? ` (${item.size})` : ''}: ` +
-          `Only ${currentStock} left in stock, but you ordered ${quantity}`
-        );
+    if (currentStock < quantity) {
+      stockErrors.push(
+        `${item.title}${item.variation ? ` (${item.variation})` : ''}${item.size ? ` (${item.size})` : ''}: ` +
+        `Only ${currentStock} left in stock, but you ordered ${quantity}`
+      );
+    } else {
+      stockUpdates.push({
+        productId: productRef.id,
+        productRef,
+        stockField,
+        stockKey,
+        newStock: currentStock - quantity,
+        currentStockMap: productData.stock || {},
+        item,
+      });
+    }
+  }
+
+  if (stockErrors.length > 0) return { success: false, errors: stockErrors };
+
+  for (const update of stockUpdates) {
+    try {
+      if (update.stockField === 'default') {
+        // Safe — no dot notation needed
+        await updateDoc(update.productRef, { defaultStock: update.newStock });
       } else {
-        stockUpdates.push({
-          productId: productRef.id,
-          productRef,
-          stockKey,
-          newStock: currentStock - quantity,
-          item: item
-        });
-      }
-    }
-
-    if (stockErrors.length > 0) return { success: false, errors: stockErrors };
-
-    for (const update of stockUpdates) {
-      try {
-        await updateDoc(update.productRef, {
-          [update.stockKey]: update.newStock
-        });
-      } catch (err) {
-        return { 
-          success: false, 
-          errors: [`Failed to update stock for ${update.item.title}. Please try again.`] 
+        // ✅ Write the entire stock map back to avoid dot-notation issues
+        // with keys that contain dots (e.g. "2.6(sawado)")
+        const updatedStockMap = {
+          ...update.currentStockMap,
+          [update.stockKey]: update.newStock,
         };
+        await updateDoc(update.productRef, { stock: updatedStockMap });
       }
+    } catch (err) {
+      return {
+        success: false,
+        errors: [`Failed to update stock for ${update.item.title}. Please try again.`],
+      };
     }
-    return { success: true, errors: [] };
-  };
+  }
+
+  return { success: true, errors: [] };
+};
 
   const validateForm = () => {
     const newErrors = {};
