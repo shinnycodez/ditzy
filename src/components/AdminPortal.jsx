@@ -295,7 +295,30 @@ const deleteOrder = async (orderId) => {
       }
     }
   };
-
+const deleteAllDeliveredOrders = async () => {
+  if (confirm("⚠️ Are you sure you want to delete ALL delivered orders? This action cannot be undone.")) {
+    try {
+      const deliveredOrders = orders.filter(order => order.status === "delivered");
+      
+      if (deliveredOrders.length === 0) {
+        alert("No delivered orders to delete.");
+        return;
+      }
+      
+      if (confirm(`You are about to delete ${deliveredOrders.length} delivered order(s). Are you ABSOLUTELY sure?`)) {
+        // Delete each delivered order
+        for (const order of deliveredOrders) {
+          await deleteDoc(doc(db, "orders", order.id));
+        }
+        console.log(`Deleted ${deliveredOrders.length} delivered orders successfully.`);
+        alert(`✅ Successfully deleted ${deliveredOrders.length} delivered order(s).`);
+      }
+    } catch (err) {
+      console.error("Failed to delete delivered orders:", err);
+      alert("❌ Failed to delete delivered orders. Please try again.");
+    }
+  }
+};
   // New function to toggle discount status
   const toggleDiscountStatus = async (discountId, currentStatus) => {
     try {
@@ -1232,46 +1255,61 @@ const OrderDetails = ({ order }) => (
                     )}
                   </div>
 
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold mt-6 mb-3 text-gray-800 border-b pb-2">📦 Delivered Orders ({orders.filter(o => o.status === "delivered").length})</h3>
-                    {orders.filter(o => o.status === "delivered").length === 0 ? (
-                      <p className="text-gray-500 text-sm sm:text-base">No delivered orders yet.</p>
-                    ) : (
-                      orders
-                        .filter((order) => order.status === "delivered")
-                        .map((order) => (
-                          <div key={order.id} className="border border-green-300 rounded-lg p-4 bg-green-50 shadow-sm mb-4 last:mb-0">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                              <div className="mb-2 sm:mb-0">
-                                <p className="font-semibold text-base sm:text-lg text-gray-900">
-                                  Order by: {order.shippingAddress?.fullName || order.user}
-                                </p>
-                                <p className="text-sm text-gray-600">Total: PKR {order.total?.toLocaleString()}</p>
-                                <p className="text-sm text-gray-600">Payment: {order.payment}</p>
-                              </div>
-                              <div className="flex items-center gap-3 mt-2 sm:mt-0">
-                                <button
-                                  className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors duration-200"
-                                  onClick={() => toggleExpand(order.id)}
-                                >
-                                  {expandedOrders[order.id] ? "Hide Details" : "View Details"}
-                                </button>
-                                <button
-                                  onClick={() => deleteOrder(order.id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-sm rounded-md transition-colors duration-200"
-                                >
-                                  🗑️ Delete
-                                </button>
-                              </div>
-                            </div>
+                 <div>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 mb-3 gap-2">
+    <h3 className="text-lg sm:text-xl font-bold text-gray-800">
+      📦 Delivered Orders ({orders.filter(o => o.status === "delivered").length})
+    </h3>
+    {orders.filter(o => o.status === "delivered").length > 0 && (
+      <button
+        onClick={deleteAllDeliveredOrders}
+        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm rounded-md transition-colors duration-200 flex items-center gap-2"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete All Delivered Orders
+      </button>
+    )}
+  </div>
+  {orders.filter(o => o.status === "delivered").length === 0 ? (
+    <p className="text-gray-500 text-sm sm:text-base">No delivered orders yet.</p>
+  ) : (
+    orders
+      .filter((order) => order.status === "delivered")
+      .map((order) => (
+        <div key={order.id} className="border border-green-300 rounded-lg p-4 bg-green-50 shadow-sm mb-4 last:mb-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div className="mb-2 sm:mb-0">
+              <p className="font-semibold text-base sm:text-lg text-gray-900">
+                Order by: {order.shippingAddress?.fullName || order.user}
+              </p>
+              <p className="text-sm text-gray-600">Total: PKR {order.total?.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Payment: {order.payment}</p>
+            </div>
+            <div className="flex items-center gap-3 mt-2 sm:mt-0">
+              <button
+                className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors duration-200"
+                onClick={() => toggleExpand(order.id)}
+              >
+                {expandedOrders[order.id] ? "Hide Details" : "View Details"}
+              </button>
+              <button
+                onClick={() => deleteOrder(order.id)}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-sm rounded-md transition-colors duration-200"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
 
-                            {expandedOrders[order.id] && (
-                              <OrderDetails order={order} />
-                            )}
-                          </div>
-                        ))
-                    )}
-                  </div>
+          {expandedOrders[order.id] && (
+            <OrderDetails order={order} />
+          )}
+        </div>
+      ))
+  )}
+</div>
                 </>
               )}
             </div>
