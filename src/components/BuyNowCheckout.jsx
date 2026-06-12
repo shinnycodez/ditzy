@@ -19,7 +19,7 @@ const BuyNowCheckout = () => {
     region: '',
     country: '',
     shippingMethod: 'Standard Delivery',
-    paymentMethod: 'JazzCash/EasyPaisa',
+    paymentMethod: 'Advance payment',
     promoCode: '',
     notes: '',
   });
@@ -30,7 +30,7 @@ const BuyNowCheckout = () => {
   const [stockValidationErrors, setStockValidationErrors] = useState([]);
 
   // Constants
-  const MINIMUM_ORDER_VALUE = 1000;
+  const SHIPPING_COST = 350; // Flat rate for all cities
 
   // Load buy now product from session storage
   useEffect(() => {
@@ -52,22 +52,7 @@ const BuyNowCheckout = () => {
   }, []);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
-  const shippingCost = form.city.trim().toLowerCase() === 'karachi' ? 250 : 350;
-  const cashOnDeliveryFee = 0; // No extra COD fee
-  const total = subtotal + shippingCost + cashOnDeliveryFee;
-
-  // Split payment for JazzCash/EasyPaisa
-  const getSplitAmounts = () => {
-    if (form.paymentMethod !== 'JazzCash/EasyPaisa') return { advance: 0, doorstep: 0 };
-    const advance = Math.max(0, total - 500);
-    const doorstep = total - advance; // will be min(500, total)
-    return { advance, doorstep };
-  };
-  const { advance: advanceAmount, doorstep: doorstepAmount } = getSplitAmounts();
-
-  // Check if order meets minimum value requirement
-  const isMinimumOrderMet = subtotal >= MINIMUM_ORDER_VALUE;
-  const remainingAmount = MINIMUM_ORDER_VALUE - subtotal;
+  const total = subtotal + SHIPPING_COST;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -80,8 +65,8 @@ const BuyNowCheckout = () => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     
-    // Clear proof when switching away from JazzCash/EasyPaisa
-    if (name === 'paymentMethod' && value !== 'JazzCash/EasyPaisa') {
+    // Clear proof when switching away from Advance payment
+    if (name === 'paymentMethod' && value !== 'Advance payment') {
       setBankTransferProofBase64(null);
       setErrors(prev => ({ ...prev, bankTransferProof: '' }));
     }
@@ -116,83 +101,80 @@ const BuyNowCheckout = () => {
     }
   };
 
-  // Stock validation and reduction (unchanged)
- const validateAndReduceStock = async (items) => {
-  const stockErrors = [];
-  const stockUpdates = [];
+  // Stock validation and reduction
+  const validateAndReduceStock = async (items) => {
+    const stockErrors = [];
+    const stockUpdates = [];
 
-  for (const item of items) {
-    const productRef = doc(db, "products", item.productId || item.id.replace('temp_', ''));
-    const productDoc = await getDoc(productRef);
-    
-    if (!productDoc.exists()) {
-      stockErrors.push(`${item.title}: Product not found`);
-      continue;
-    }
-
-    const productData = productDoc.data();
-    const quantity = item.quantity || 1;
-    let currentStock = null;
-    let stockField = null; // 'variation', 'size', or 'default'
-    let stockKey = null;   // the actual key inside the stock map
-
-    if (item.variation && productData.stock && productData.stock[item.variation] !== undefined) {
-      currentStock = productData.stock[item.variation];
-      stockField = 'variation';
-      stockKey = item.variation;
-    } else if (item.size && productData.stock && productData.stock[item.size] !== undefined) {
-      currentStock = productData.stock[item.size];
-      stockField = 'size';
-      stockKey = item.size;
-    } else {
-      currentStock = productData.defaultStock || 0;
-      stockField = 'default';
-    }
-
-    if (currentStock < quantity) {
-      stockErrors.push(
-        `${item.title}${item.variation ? ` (${item.variation})` : ''}${item.size ? ` (${item.size})` : ''}: ` +
-        `Only ${currentStock} left in stock, but you ordered ${quantity}`
-      );
-    } else {
-      stockUpdates.push({
-        productId: productRef.id,
-        productRef,
-        stockField,
-        stockKey,
-        newStock: currentStock - quantity,
-        currentStockMap: productData.stock || {},
-        item,
-      });
-    }
-  }
-
-  if (stockErrors.length > 0) return { success: false, errors: stockErrors };
-
-  for (const update of stockUpdates) {
-    try {
-      if (update.stockField === 'default') {
-        // Safe — no dot notation needed
-        await updateDoc(update.productRef, { defaultStock: update.newStock });
-      } else {
-        // ✅ Write the entire stock map back to avoid dot-notation issues
-        // with keys that contain dots (e.g. "2.6(sawado)")
-        const updatedStockMap = {
-          ...update.currentStockMap,
-          [update.stockKey]: update.newStock,
-        };
-        await updateDoc(update.productRef, { stock: updatedStockMap });
+    for (const item of items) {
+      const productRef = doc(db, "products", item.productId || item.id.replace('temp_', ''));
+      const productDoc = await getDoc(productRef);
+      
+      if (!productDoc.exists()) {
+        stockErrors.push(`${item.title}: Product not found`);
+        continue;
       }
-    } catch (err) {
-      return {
-        success: false,
-        errors: [`Failed to update stock for ${update.item.title}. Please try again.`],
-      };
-    }
-  }
 
-  return { success: true, errors: [] };
-};
+      const productData = productDoc.data();
+      const quantity = item.quantity || 1;
+      let currentStock = null;
+      let stockField = null; // 'variation', 'size', or 'default'
+      let stockKey = null;   // the actual key inside the stock map
+
+      if (item.variation && productData.stock && productData.stock[item.variation] !== undefined) {
+        currentStock = productData.stock[item.variation];
+        stockField = 'variation';
+        stockKey = item.variation;
+      } else if (item.size && productData.stock && productData.stock[item.size] !== undefined) {
+        currentStock = productData.stock[item.size];
+        stockField = 'size';
+        stockKey = item.size;
+      } else {
+        currentStock = productData.defaultStock || 0;
+        stockField = 'default';
+      }
+
+      if (currentStock < quantity) {
+        stockErrors.push(
+          `${item.title}${item.variation ? ` (${item.variation})` : ''}${item.size ? ` (${item.size})` : ''}: ` +
+          `Only ${currentStock} left in stock, but you ordered ${quantity}`
+        );
+      } else {
+        stockUpdates.push({
+          productId: productRef.id,
+          productRef,
+          stockField,
+          stockKey,
+          newStock: currentStock - quantity,
+          currentStockMap: productData.stock || {},
+          item,
+        });
+      }
+    }
+
+    if (stockErrors.length > 0) return { success: false, errors: stockErrors };
+
+    for (const update of stockUpdates) {
+      try {
+        if (update.stockField === 'default') {
+          await updateDoc(update.productRef, { defaultStock: update.newStock });
+        } else {
+          const updatedStockMap = {
+            ...update.currentStockMap,
+            [update.stockKey]: update.newStock,
+          };
+          await updateDoc(update.productRef, { stock: updatedStockMap });
+        }
+      } catch (err) {
+        return {
+          success: false,
+          errors: [`Failed to update stock for ${update.item.title}. Please try again.`],
+        };
+      }
+    }
+
+    return { success: true, errors: [] };
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -209,13 +191,9 @@ const BuyNowCheckout = () => {
       newErrors.phone = 'Please enter a valid phone number (at least 7 digits)';
     }
 
-    // For JazzCash/EasyPaisa, require proof if advance amount > 0
-    if (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64) {
-      newErrors.bankTransferProof = `Please upload a screenshot of your advance payment of PKR ${advanceAmount.toLocaleString()}.`;
-    }
-
-    if (!isMinimumOrderMet) {
-      newErrors.minimumOrder = `Minimum order value is PKR ${MINIMUM_ORDER_VALUE.toLocaleString()}. Add PKR ${remainingAmount.toLocaleString()} more to proceed.`;
+    // Require bank transfer proof for Advance payment
+    if (form.paymentMethod === 'Advance payment' && !bankTransferProofBase64) {
+      newErrors.bankTransferProof = `Please upload a screenshot of your advance payment of PKR ${total.toLocaleString()}.`;
     }
 
     setErrors(newErrors);
@@ -277,17 +255,14 @@ const BuyNowCheckout = () => {
       promoCode: form.promoCode,
       notes: form.notes,
       subtotal,
-      shippingCost,
-      cashOnDeliveryFee,
+      shippingCost: SHIPPING_COST,
       total,
       createdAt: new Date(),
       status: 'processing',
       buyNow: true,
       stockReducedAtOrderPlacement: true,
-      // Store split payment details for JazzCash/EasyPaisa
-      advanceAmount: form.paymentMethod === 'JazzCash/EasyPaisa' ? advanceAmount : null,
-      doorstepAmount: form.paymentMethod === 'JazzCash/EasyPaisa' ? doorstepAmount : null,
-      bankTransferProofBase64: form.paymentMethod === 'JazzCash/EasyPaisa' ? bankTransferProofBase64 : null,
+      // Store advance payment proof for Advance payment
+      bankTransferProofBase64: form.paymentMethod === 'Advance payment' ? bankTransferProofBase64 : null,
     };
 
     try {
@@ -361,23 +336,6 @@ const BuyNowCheckout = () => {
             </div>
           )}
 
-          {!isMinimumOrderMet && (
-            <div className="mb-6 p-4 border border-orange-300 bg-orange-50 rounded-md">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-orange-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <h3 className="text-orange-800 font-medium">Minimum Order Required</h3>
-                  <p className="text-orange-700 text-sm">Minimum order value is PKR {MINIMUM_ORDER_VALUE.toLocaleString()}. Add PKR {remainingAmount.toLocaleString()} more to proceed.</p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/')} className="mt-3 bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-700 transition">
-                Continue Shopping
-              </button>
-            </div>
-          )}
-
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left Column – Form */}
             <div className="bg-[#fefaf9] p-6 rounded-lg shadow-sm">
@@ -411,25 +369,26 @@ const BuyNowCheckout = () => {
                     className={`w-full px-4 py-2 border ${errors.address ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black`} />
                   {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
                 </div>
-<div className="mb-6">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Instagram Username <span className="text-gray-400 text-xs font-normal">(Optional)</span>
-  </label>
-  <div className="relative">
-    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-      @
-    </span>
-    <input
-      name="instagram"
-      type="text"
-      value={form.instagram}
-      onChange={handleChange}
-      placeholder="yourusername"
-      className="w-full px-4 py-2 pl-8 border border-gray-300 rounded-md focus:ring-black focus:border-black"
-    />
-  </div>
 
-</div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Instagram Username <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      @
+                    </span>
+                    <input
+                      name="instagram"
+                      type="text"
+                      value={form.instagram}
+                      onChange={handleChange}
+                      placeholder="yourusername"
+                      className="w-full px-4 py-2 pl-8 border border-gray-300 rounded-md focus:ring-black focus:border-black"
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City*</label>
@@ -470,46 +429,51 @@ const BuyNowCheckout = () => {
                   <input type="radio" name="shippingMethod" value="Standard Delivery" checked={form.shippingMethod === 'Standard Delivery'} onChange={handleChange} className="h-4 w-4 text-black focus:ring-black" />
                   <div className="ml-3">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Standard Delivery</p>
-                    <p className="text-xs sm:text-sm text-gray-500">PKR 250 for Karachi and 350 for other cities - Delivery in 8-10 business days</p>
+                    <p className="text-xs sm:text-sm text-gray-500">PKR {SHIPPING_COST} - Delivery in 8-10 business days</p>
                   </div>
                 </label>
               </div>
 
               <h2 className="text-lg sm:text-xl font-semibold mt-8 mb-6 pb-2 border-b">Payment Method</h2>
               <div className="space-y-4">
-                {['Cash on Delivery', 'JazzCash/EasyPaisa'].map(method => (
-                  <label key={method} className="flex items-center p-4 border rounded-md hover:border-black cursor-pointer">
-                    <input type="radio" name="paymentMethod" value={method} checked={form.paymentMethod === method} onChange={handleChange} className="h-4 w-4 text-black focus:ring-black" />
-                    <div className="ml-3">
-                      <span className="font-medium text-gray-900 text-sm sm:text-base">{method}</span>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {method === 'Cash on Delivery' ? 'Pay when your order is delivered' : 'Split payment: advance online + cash on doorstep'}
-                      </p>
-                    </div>
-                  </label>
-                ))}
+                <label className="flex items-center p-4 border rounded-md hover:border-black cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="Cash on Delivery" checked={form.paymentMethod === 'Cash on Delivery'} onChange={handleChange} className="h-4 w-4 text-black focus:ring-black" />
+                  <div className="ml-3">
+                    <span className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</span>
+                    <p className="text-xs sm:text-sm text-gray-500">Pay when your order is delivered</p>
+                  </div>
+                </label>
+                
+                <label className="flex items-center p-4 border rounded-md hover:border-black cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="Advance payment" checked={form.paymentMethod === 'Advance payment'} onChange={handleChange} className="h-4 w-4 text-black focus:ring-black" />
+                  <div className="ml-3">
+                    <span className="font-medium text-gray-900 text-sm sm:text-base">Advance payment</span>
+                    <p className="text-xs sm:text-sm text-gray-500">Pay full amount online in advance</p>
+                  </div>
+                </label>
               </div>
 
-              {form.paymentMethod === 'JazzCash/EasyPaisa' && (
+              {form.paymentMethod === 'Advance payment' && (
                 <div className="mt-6 p-4 border border-blue-300 bg-blue-50 rounded-md">
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">Split Payment – JazzCash/EasyPaisa</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-3">Advance Payment</h3>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    <strong>Advance payment:</strong> PKR {advanceAmount.toLocaleString()} (total - 500)<br />
-                    <strong>Remaining (pay on doorstep):</strong> PKR {doorstepAmount.toLocaleString()}
-                  </p>
-                  <p className="text-gray-700 mb-2 text-sm sm:text-base">
-                    Please transfer the advance amount of <strong>PKR {advanceAmount.toLocaleString()}</strong> to:
+                    Please transfer the full amount of <strong>PKR {total.toLocaleString()}</strong> to:
                   </p>
                   <ul className="list-disc list-inside text-gray-800 text-sm sm:text-base mb-4">
-                    <li><strong>Account Name:</strong> Muzaffar uddin Ahmed</li>
-                    <li><strong>JazzCash/EasyPaisa Number:</strong> 0333 0258436</li>
+   <h2>Nayapay</h2>
+                    <li><strong>Account Name</strong> Duaa Khan</li>
+                    <li><strong>Bank Account Number:</strong> 02321007872534</li>
+                    <h2>Bank transfer</h2>
+                      <li><strong>Bank Name</strong> Bank Alfalah</li>
+                    <li><strong>Bank Account Number: </strong>02321007872534</li>      
+                    <li><strong>Account holder name : </strong>02321007872534</li> 
                   </ul>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
-                    After completing the advance transfer, upload a screenshot / receipt as proof. The remaining PKR {doorstepAmount.toLocaleString()} will be collected in cash when your order is delivered.
+                    After completing the transfer, upload a screenshot / receipt as proof.
                   </p>
                   <div>
                     <label htmlFor="bankTransferProof" className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload Advance Payment Proof*
+                      Upload Payment Proof*
                     </label>
                     <input id="bankTransferProof" type="file" accept="image/*" onChange={handleFileChange}
                       className={`w-full px-4 py-2 border ${errors.bankTransferProof ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-black focus:border-black`} />
@@ -577,7 +541,7 @@ const BuyNowCheckout = () => {
 
               <div className="space-y-3 border-t border-gray-200 pt-4">
                 <div className="flex justify-between"><span className="text-sm text-gray-600">Subtotal</span><span>PKR {subtotal.toLocaleString()}</span></div>
-                <div className="flex justify-between"><span className="text-sm text-gray-600">Shipping</span><span>PKR {shippingCost.toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-gray-600">Shipping</span><span>PKR {SHIPPING_COST.toLocaleString()}</span></div>
                 {form.promoCode && <div className="flex justify-between"><span className="text-sm text-gray-600">Discount</span><span className="text-green-600">-PKR 0</span></div>}
               </div>
 
@@ -586,43 +550,30 @@ const BuyNowCheckout = () => {
                 <span className="font-bold text-base sm:text-lg">PKR {total.toLocaleString()}</span>
               </div>
 
-              {form.paymentMethod === 'JazzCash/EasyPaisa' && (
-                <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-700">
-                  <p><strong>Split payment breakdown:</strong></p>
-                  <p>🔹 Advance via JazzCash/EasyPaisa: <strong>PKR {advanceAmount.toLocaleString()}</strong></p>
-                  <p>🔹 Cash on doorstep: <strong>PKR {doorstepAmount.toLocaleString()}</strong></p>
-                </div>
-              )}
-
-              {errors.minimumOrder && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm">{errors.minimumOrder}</p>
-                </div>
-              )}
-
               <button
                 onClick={placeOrder}
-                disabled={loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet || (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64)}
+                disabled={loading || cartItems.length === 0 || convertingImage || (form.paymentMethod === 'Advance payment' && !bankTransferProofBase64)}
                 className={`mt-6 w-full py-3 px-4 rounded-md font-medium text-white ${
-                  loading || cartItems.length === 0 || convertingImage || !isMinimumOrderMet || (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64)
+                  loading || cartItems.length === 0 || convertingImage || (form.paymentMethod === 'Advance payment' && !bankTransferProofBase64)
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-black hover:bg-gray-800'
                 } transition text-base`}
               >
                 {loading || convertingImage ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                     {convertingImage ? 'Converting Image...' : 'Processing Order...'}
                   </span>
                 ) : cartItems.length === 0 ? 'No Items to Order'
-                : !isMinimumOrderMet ? `Add PKR ${remainingAmount.toLocaleString()} More`
-                : (form.paymentMethod === 'JazzCash/EasyPaisa' && advanceAmount > 0 && !bankTransferProofBase64) ? 'Upload advance payment proof'
+                : (form.paymentMethod === 'Advance payment' && !bankTransferProofBase64) ? 'Upload payment proof'
                 : 'Place Order Now'}
               </button>
 
               <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
                 <p>100% secure checkout</p>
-                {!isMinimumOrderMet && <p className="text-orange-600 mt-2">Minimum order: PKR {MINIMUM_ORDER_VALUE.toLocaleString()}</p>}
               </div>
             </div>
           </div>

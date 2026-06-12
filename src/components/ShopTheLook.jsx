@@ -29,9 +29,9 @@ function ShopTheLook() {
 
   return (
     <div className="mb-8">
-      <h2 className="text-white text-2xl md:text-3xl font-bold leading-tight tracking-[-0.015em] px-4 pb-4 pt-6">
-       top sellers ⋆｡𖦹°⭒˚｡⋆
-      </h2>
+      <h2 className="text-[#ff9f00] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5 font-['Didot','Bodoni_MT','Didot_LT_Std','Georgia',serif]">
+     top sellers ⋆｡𖦹°⭒˚｡⋆
+  </h2>
 
       {loading ? (
         <p className="px-4 text-gray-500">Loading...</p>

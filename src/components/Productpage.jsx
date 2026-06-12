@@ -247,7 +247,7 @@ const ProductPage = ({ onOpenCart }) => {
   };
 
   if (!product) return (
-    <div className="min-h-screen bg-[#a4c2da] flex items-center justify-center">
+    <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
         <p className="text-gray-600">Loading product...</p>
@@ -265,7 +265,7 @@ const ProductPage = ({ onOpenCart }) => {
   const outOfStock = isOutOfStock();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-[#a4c2da] overflow-x-hidden">
+    <div className="relative flex min-h-screen flex-col bg-[#FFFFFF] overflow-x-hidden">
       {showSuccess && (
         <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100]">
           <div className="flex items-center gap-3 bg-green-100 border border-green-300 text-green-800 px-5 py-2 rounded-xl shadow-lg animate-fade-in-out transition-all">
@@ -284,7 +284,7 @@ const ProductPage = ({ onOpenCart }) => {
       )}
 
       <Header />
-      <div className="layout-container flex h-full grow flex-col bg-[#a4c2da]">
+      <div className="layout-container flex h-full grow flex-col bg-[#FFFFFF]">
         <div className="gap-1 px-6 flex flex-1 justify-center py-5 flex-col md:flex-row">
           <div className="flex flex-col max-w-[920px] flex-1">
             <div className="flex w-full grow p-4 relative">
@@ -308,7 +308,7 @@ const ProductPage = ({ onOpenCart }) => {
           <div className="flex flex-col w-full md:w-[360px]">
             {/* Product Info with Discount Pricing */}
             <div className="px-4 py-3">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{product.title}</h1>
+          <h1 className="text-2xl font-bold text-[#ff9f00] mb-2 font-['Didot','Bodoni_MT','Didot_LT_Std','Georgia',serif]">{product.title}</h1>
               
               {/* Price Display with Discount */}
               <div className="mb-4">
@@ -337,7 +337,7 @@ const ProductPage = ({ onOpenCart }) => {
                     )}
                   </div>
                 ) : (
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-2xl font-bold text-[#ff9f00]">
                     PKR {product.price.toLocaleString()}
                   </span>
                 )}
@@ -502,7 +502,7 @@ const ProductPage = ({ onOpenCart }) => {
                 disabled={loading || outOfStock || !product.available}
                 className={`w-full py-3 px-4 rounded-xl font-medium text-base transition-colors ${
                   !loading && !outOfStock && product.available
-                    ? 'bg-[#1c5078] text-white hover:bg-[#FCBACB]'
+                    ? 'bg-[#ff9f00] text-white hover:bg-[#FF6A1C]'
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 }`}
               >

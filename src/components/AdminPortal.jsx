@@ -552,7 +552,7 @@ const OrderDetails = ({ order }) => (
   <div className="mt-4 space-y-3 text-sm text-gray-700 p-2 border-t border-gray-200 pt-3">
     <p><strong>Status:</strong> <span className={`font-semibold ${order.status === 'delivered' ? 'text-green-600' : 'text-orange-600'}`}>{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span></p>
     <p><strong>Payment Method:</strong> {order.payment}</p>
-    {order.payment === 'JazzCash/EasyPaisa' && order.bankTransferProofBase64 && (
+    {order.payment === 'Advance payment' && order.bankTransferProofBase64 && (
       <div className="mt-2">
         <strong>Bank Transfer Proof:</strong>
         <div

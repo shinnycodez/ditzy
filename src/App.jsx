@@ -16,7 +16,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const adminEmails = ["mueezimran1@gmail.com", "mallojewels1@gmail.com"];
+  const adminEmails = ["mueezimran1@gmail.com", "duaak168@gmail.com"];
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(

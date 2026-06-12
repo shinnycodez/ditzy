@@ -111,17 +111,17 @@ function ProductGrid({ products = [], filters = {}, searchQuery = '', loading = 
           Home
         </Link>
         <span className="text-[#757575] text-base font-medium">/</span>
-        <span className="text-[#141414] text-base font-medium">{title}</span>
+        <span className="text-[#ff9f00] text-base font-medium">{title}</span>
       </div>
 
       {/* Page Title */}
       <div className="flex items-center gap-3">
-        <p className="text-[#141414] text-[32px] font-bold">{title}</p>
-        <img
+    <p className="text-[#ff9f00] text-2xl font-bold">{title}</p>
+        {/* <img
           src="https://pbs.twimg.com/media/GznizxLWUAEdik-?format=png&name=small"
           alt="category icon"
           className="w-30 h-25 object-contain"
-        />
+        /> */}
       </div>
 
       {/* Results count */}
@@ -147,7 +147,7 @@ function ProductGrid({ products = [], filters = {}, searchQuery = '', loading = 
                 </div>
 
                 {/* Product info - fixed height with consistent spacing */}
-                <div className="px-3 pb-4 flex flex-col justify-between h-[130px]">
+                <div className="px-3 pb-4 flex flex-col justify-between h-[140px]">
                   <div className="min-h-[60px] overflow-hidden">
                     <p className="text-[#141414] text-base font-medium line-clamp-2">
                       {product.title}
@@ -164,7 +164,7 @@ function ProductGrid({ products = [], filters = {}, searchQuery = '', loading = 
                     className={`mt-auto py-2 px-1 rounded-full text-white text-sm font-semibold shadow-md transition-all duration-200 ${
                       product.available === false 
                         ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-[#1c5078] hover:bg-gray-900'
+                        : 'bg-[#ff9f00] hover:bg-gray-900'
                     }`}
                     disabled={product.available === false}
                     onClick={(e) => {

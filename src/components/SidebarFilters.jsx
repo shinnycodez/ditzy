@@ -133,7 +133,7 @@ function SidebarFilters({ onFilterChange, onClose }) {
         <div className="flex gap-2 mt-2">
           <button
             onClick={applyFilters}
-            className="flex-1 bg-[#141414] text-white text-sm font-semibold py-2 px-4 rounded hover:opacity-90 transition"
+            className="flex-1 bg-[#ff9f00] text-white text-sm font-semibold py-2 px-4 rounded hover:opacity-90 transition"
           >
             Apply Filters
           </button>
