@@ -32,9 +32,8 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="max-w-full mx-auto mt-10 bg-[#
-#fefaf9] p-8 rounded-2xl shadow-lg border border-white">
-      <h2 className="text-2xl font-bold text-[#ff9f00] mb-4 text-center"> Leave a comment</h2>
+    <div className="max-w-full mx-auto mt-10 bg-[#ff9f00] p-8 rounded-2xl shadow-lg border border-[#ffb833]">
+      <h2 className="text-2xl font-bold text-white mb-4 text-center">got any suggestions?♡</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -42,7 +41,7 @@ const ContactForm = () => {
           placeholder="Your name"
           value={form.name}
           onChange={handleChange}
-          className="w-full p-3 rounded-lg border border-white focus:outline-none focus:ring-2 focus:ring-[#ff9f00]"
+          className="w-full p-3 rounded-lg bg-white/90 text-[#5a3a1a] placeholder-[#8b6b3a] border border-[#ffb833] focus:outline-none focus:ring-2 focus:ring-white/70"
         />
         <input
           type="email"
@@ -50,7 +49,7 @@ const ContactForm = () => {
           placeholder="Your email"
           value={form.email}
           onChange={handleChange}
-          className="w-full p-3 rounded-lg border border-white focus:outline-none focus:ring-2 focus:ring-[#ff9f00]"
+          className="w-full p-3 rounded-lg bg-white/90 text-[#5a3a1a] placeholder-[#8b6b3a] border border-[#ffb833] focus:outline-none focus:ring-2 focus:ring-white/70"
         />
         <textarea
           name="message"
@@ -58,16 +57,16 @@ const ContactForm = () => {
           rows="4"
           value={form.message}
           onChange={handleChange}
-          className="w-full p-3 rounded-lg border border-white focus:outline-none focus:ring-2 focus:ring-[#ff9f00]"
+          className="w-full p-3 rounded-lg bg-white/90 text-[#5a3a1a] placeholder-[#8b6b3a] border border-[#ffb833] focus:outline-none focus:ring-2 focus:ring-white/70"
         />
         <button
           type="submit"
-          className="w-full bg-[#ff9f00] hover:bg-[#FF6A1C] text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+          className="w-full bg-white hover:bg-[#fff5e6] text-[#ff9f00] font-semibold py-2 px-4 rounded-lg transition duration-300"
         >
           ✨ Send
         </button>
       </form>
-      {status && <p className="mt-4 text-center text-pink-600">{status}</p>}
+      {status && <p className="mt-4 text-center text-[#fff0d0]">{status}</p>}
     </div>
   );
 };

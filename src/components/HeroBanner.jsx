@@ -2,7 +2,7 @@ import React from 'react';
 
 function HeroBanner() {
   const imageUrl =
-    'https://pbs.twimg.com/media/HKoUrL1WMAAc5Gl?format=jpg&name=900x900';
+    'https://pbs.twimg.com/media/HKsdOsAa0AA8g4v?format=jpg&name=900x900';
 
   return (
     <div className="relative bg-[#FAF3E1] ">

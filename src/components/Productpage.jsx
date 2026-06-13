@@ -308,7 +308,7 @@ const ProductPage = ({ onOpenCart }) => {
           <div className="flex flex-col w-full md:w-[360px]">
             {/* Product Info with Discount Pricing */}
             <div className="px-4 py-3">
-          <h1 className="text-2xl font-bold text-[#ff9f00] mb-2 font-['Didot','Bodoni_MT','Didot_LT_Std','Georgia',serif]">{product.title}</h1>
+          <h1 className="text-2xl font-bold text-black mb-2 font-['Didot','Bodoni_MT','Didot_LT_Std','Georgia',serif]">{product.title}</h1>
               
               {/* Price Display with Discount */}
               <div className="mb-4">
@@ -337,9 +337,9 @@ const ProductPage = ({ onOpenCart }) => {
                     )}
                   </div>
                 ) : (
-                  <span className="text-2xl font-bold text-[#ff9f00]">
-                    PKR {product.price.toLocaleString()}
-                  </span>
+             <span className="text-xl font-bold text-[#ff9f00]">
+    PKR {product.price.toLocaleString()}
+</span>
                 )}
               </div>
 
@@ -355,31 +355,12 @@ const ProductPage = ({ onOpenCart }) => {
               {outOfStock ? (
                 <p className="text-red-600 font-medium">❌ Out of Stock</p>
               ) : (
-                <p className="text-green-600 font-medium">✅ In Stock</p>
+                <p className="text-black-600 font-medium">✅ In Stock</p>
               )}
             </div>
 
             {/* Stock Information Display */}
-            {!outOfStock && (
-              <div className="px-4 py-2">
-                <p className="text-sm text-gray-600">
-                  {selectedVariation && product.stock && product.stock[selectedVariation] !== undefined 
-                    ? `Stock (${selectedVariation}): ${currentStock} available`
-                    : selectedSize && product.stock && product.stock[selectedSize] !== undefined 
-                      ? `Stock (${selectedSize}): ${currentStock} available`
-                      : `Stock: ${currentStock} available`
-                  }
-                </p>
-                
-                {/* Low stock warning */}
-                {currentStock > 0 && currentStock <= 5 && (
-                  <p className="text-sm text-orange-600 font-medium mt-1">
-                    ⚠️ Low stock! Only {currentStock} left
-                  </p>
-                )}
-              </div>
-            )}
-
+        
             {/* Color Variations Selector with Stock */}
             {product.variations && product.variations.length > 0 && (
               <div className="px-4 py-3">

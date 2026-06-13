@@ -4,13 +4,13 @@ import { Link } from 'react-router-dom';
 const categories = [
     {
     id: 1,
-    title: "bracelets",
+    title: "bracelets♡",
     imageUrl: "https://pbs.twimg.com/media/HKoaD1TWEAA8tQT?format=jpg&name=large",
     link: "bracelets"
   },
   {
     id: 2,
-    title: "keychains ⋆｡𖦹°",
+    title: "keychains♡",
     imageUrl: "https://pbs.twimg.com/media/HKoaJAGWgAA5VT8?format=jpg&name=large",
       link: "keychains",
   },
@@ -18,28 +18,28 @@ const categories = [
 
     {
     id: 4,
-    title: "bokmarks",
+    title: "bookmarks♡",
     imageUrl: "https://pbs.twimg.com/media/HKoaLqXXIAAEnMc?format=jpg&name=large",
    link: "bookmarks",
   },
         {
     id: 4,
-    title: "phone charms",
+    title: "phone charms♡",
     imageUrl:"https://pbs.twimg.com/media/HKoaOgPWkAAFyN9?format=jpg&name=large",
      link: "phone charms"
   },
       {
     id: 3,
-    title: "Necklaces",
+    title: "necklaces♡",
     imageUrl: "https://pbs.twimg.com/media/HKoeUXgaYAABTNY?format=jpg&name=small",
-      link: "Necklaces"
+      link: "necklaces"
   },
 
         {
     id: 5,
-    title: "Earrings",
+    title: "earrings♡",
     imageUrl:"https://pbs.twimg.com/media/HKoeSPXb0AA6fhQ?format=jpg&name=large",
-     link: "Earrings"
+     link: "earrings"
   },
  
 

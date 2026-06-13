@@ -429,7 +429,7 @@ const BuyNowCheckout = () => {
                   <input type="radio" name="shippingMethod" value="Standard Delivery" checked={form.shippingMethod === 'Standard Delivery'} onChange={handleChange} className="h-4 w-4 text-black focus:ring-black" />
                   <div className="ml-3">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Standard Delivery</p>
-                    <p className="text-xs sm:text-sm text-gray-500">PKR {SHIPPING_COST} - Delivery in 8-10 business days</p>
+                    <p className="text-xs sm:text-sm text-gray-500">PKR {SHIPPING_COST} - Delivery in 5-12 working dayss</p>
                   </div>
                 </label>
               </div>
@@ -460,13 +460,14 @@ const BuyNowCheckout = () => {
                     Please transfer the full amount of <strong>PKR {total.toLocaleString()}</strong> to:
                   </p>
                   <ul className="list-disc list-inside text-gray-800 text-sm sm:text-base mb-4">
-   <h2>Nayapay</h2>
+        <strong>  <h2>Nayapay</h2></strong>
+                      <li><strong> Account Number:</strong> 03363543502</li>
                     <li><strong>Account Name</strong> Duaa Khan</li>
-                    <li><strong>Bank Account Number:</strong> 02321007872534</li>
-                    <h2>Bank transfer</h2>
-                      <li><strong>Bank Name</strong> Bank Alfalah</li>
+                  
+                  
+                      <strong>Bank Alfalah</strong> 
                     <li><strong>Bank Account Number: </strong>02321007872534</li>      
-                    <li><strong>Account holder name : </strong>02321007872534</li> 
+                    <li><strong>Account holder name : </strong>Duaa Khan</li>   
                   </ul>
                   <p className="text-gray-700 mb-4 text-sm sm:text-base">
                     After completing the transfer, upload a screenshot / receipt as proof.
