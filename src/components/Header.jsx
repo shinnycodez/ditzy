@@ -180,7 +180,7 @@ keychains♡</Link>
   onClick={() => setIsMenuOpen(false)}
   className="block px-4 py-3 hover:bg-[#FFE9DD] rounded-lg transition"
 >
-  earrings♡♡
+  earrings♡
 </Link>
 
 
